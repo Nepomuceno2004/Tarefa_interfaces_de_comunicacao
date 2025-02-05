@@ -44,9 +44,15 @@ pico_set_program_version(Tarefa_interfaces_de_comunicacao "0.1")
 pico_enable_stdio_uart(Tarefa_interfaces_de_comunicacao 1)
 pico_enable_stdio_usb(Tarefa_interfaces_de_comunicacao 1)
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
+
+pico_generate_pio_header(Tarefa_interfaces_de_comunicacao ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio OUTPUT_DIR ${CMAKE_CURRENT_LIST_DIR}/generated)
+
 # Add the standard library to the build
 target_link_libraries(Tarefa_interfaces_de_comunicacao
-        pico_stdlib)
+        pico_stdlib
+        hardware_pio
+        )
 
 # Add the standard include files to the build
 target_include_directories(Tarefa_interfaces_de_comunicacao PRIVATE
