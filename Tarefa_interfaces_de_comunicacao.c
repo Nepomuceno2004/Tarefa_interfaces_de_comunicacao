@@ -2,6 +2,14 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 #include "ws2812.pio.h"
+#include "hardware/i2c.h"
+#include "lib/ssd1306.h"
+#include "lib/font.h"
+
+#define I2C_PORT i2c1
+#define I2C_SDA 14
+#define I2C_SCL 15
+#define endereco 0x3C
 
 #define led_pin_g 11
 #define led_pin_b 12
@@ -277,7 +285,7 @@ void decisao_switch(char c)
 {
     switch (c)
     {
-    case 'r':
+    /*case 'r':
         gpio_put(led_pin_r, !gpio_get(led_pin_r));
         printf("LED vermelho alternado!\n");
         break;
@@ -288,7 +296,7 @@ void decisao_switch(char c)
     case 'b':
         gpio_put(led_pin_b, !gpio_get(led_pin_b));
         printf("LED azul alternado!\n");
-        break;
+        break;*/
     case '0':
         set_one_led(led_r, led_g, led_b, numero_0);
         break;

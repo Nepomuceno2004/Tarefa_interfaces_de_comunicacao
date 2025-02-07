@@ -41,7 +41,7 @@ pico_set_program_name(Tarefa_interfaces_de_comunicacao "Tarefa_interfaces_de_com
 pico_set_program_version(Tarefa_interfaces_de_comunicacao "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(Tarefa_interfaces_de_comunicacao 1)
+pico_enable_stdio_uart(Tarefa_interfaces_de_comunicacao 0)
 pico_enable_stdio_usb(Tarefa_interfaces_de_comunicacao 1)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/generated)
@@ -52,6 +52,7 @@ pico_generate_pio_header(Tarefa_interfaces_de_comunicacao ${CMAKE_CURRENT_LIST_D
 target_link_libraries(Tarefa_interfaces_de_comunicacao
         pico_stdlib
         hardware_pio
+        hardware_i2c
         )
 
 # Add the standard include files to the build
