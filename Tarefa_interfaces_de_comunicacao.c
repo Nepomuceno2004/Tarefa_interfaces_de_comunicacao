@@ -26,6 +26,7 @@ static volatile uint32_t last_time = 0; // Armazena o tempo do último evento (e
 uint8_t led_r = 5; // Intensidade do vermelho
 uint8_t led_g = 0; // Intensidade do verde
 uint8_t led_b = 0; // Intensidade do azul
+ssd1306_t ssd;     // Inicializa a estrutura do display
 
 bool numero_0[NUM_PIXELS] = {
     1, 1, 1, 1, 1,
@@ -228,8 +229,33 @@ static inline void put_pixel(uint32_t pixel_grb);
 static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b);
 void set_one_led(uint8_t r, uint8_t g, uint8_t b, bool led_buffer[]);
 void decisao_switch(char c);
+void inicializacao(void);
 
 int main()
+{
+    inicializacao();
+
+    gpio_set_irq_enabled_with_callback(button_a, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
+    gpio_set_irq_enabled_with_callback(button_b, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
+
+    while (true)
+    {
+        if (stdio_usb_connected())
+        { // Certifica-se de que o USB está conectado
+            char c;
+            if (scanf("%c", &c) == 1)
+            {
+                printf("Recebido: '%c'\n", c);
+                decisao_switch(c);
+            }
+        }
+        sleep_ms(40);
+    }
+
+    return 0;
+}
+
+void inicializacao(void)
 {
     stdio_init_all();
 
@@ -253,6 +279,21 @@ int main()
     gpio_set_dir(button_b, GPIO_IN);
     gpio_pull_up(button_b);
 
+    // I2C Initialisation. Using it at 400Khz.
+    i2c_init(I2C_PORT, 400 * 1000);
+
+    gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);                    // Set the GPIO pin function to I2C
+    gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);                    // Set the GPIO pin function to I2C
+    gpio_pull_up(I2C_SDA);                                        // Pull up the data line
+    gpio_pull_up(I2C_SCL);                                        // Pull up the clock line
+    ssd1306_init(&ssd, WIDTH, HEIGHT, false, endereco, I2C_PORT); // Inicializa o display
+    ssd1306_config(&ssd);                                         // Configura o display
+    ssd1306_send_data(&ssd);                                      // Envia os dados para o display
+
+    // Limpa o display. O display inicia com todos os pixels apagados.
+    ssd1306_fill(&ssd, false);
+    ssd1306_send_data(&ssd);
+
     PIO pio = pio0;
     int sm = 0;
     uint offset = pio_add_program(pio, &ws2812_program);
@@ -260,43 +301,15 @@ int main()
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, IS_RGBW);
 
     printf("RP2040 inicializado. Envie 'r', 'g' ou 'b' para alternar os LEDs ou aperte os botões 'A' ou 'B' .\n");
+    ssd1306_draw_string(&ssd, "Inicializado", 20, 32); // Desenha uma string
+    ssd1306_send_data(&ssd);               // Atualiza o display
 
-    gpio_set_irq_enabled_with_callback(button_a, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
-    gpio_set_irq_enabled_with_callback(button_b, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
-
-    while (true)
-    {
-        if (stdio_usb_connected())
-        { // Certifica-se de que o USB está conectado
-            char c;
-            if (scanf("%c", &c) == 1)
-            {
-                printf("Recebido: '%c'\n", c);
-                decisao_switch(c);
-            }
-        }
-        sleep_ms(40);
-    }
-
-    return 0;
+    return;
 }
-
 void decisao_switch(char c)
 {
     switch (c)
     {
-    /*case 'r':
-        gpio_put(led_pin_r, !gpio_get(led_pin_r));
-        printf("LED vermelho alternado!\n");
-        break;
-    case 'g':
-        gpio_put(led_pin_g, !gpio_get(led_pin_g));
-        printf("LED verde alternado!\n");
-        break;
-    case 'b':
-        gpio_put(led_pin_b, !gpio_get(led_pin_b));
-        printf("LED azul alternado!\n");
-        break;*/
     case '0':
         set_one_led(led_r, led_g, led_b, numero_0);
         break;
@@ -327,9 +340,12 @@ void decisao_switch(char c)
     case '9':
         set_one_led(led_r, led_g, led_b, numero_9);
         break;
-    default:
-        printf("Comando inválido: '%c'\n", c);
     }
+
+    char str[2] = {c, '\0'};
+    ssd1306_fill(&ssd, false);            // Limpa o display
+    ssd1306_draw_string(&ssd, str, 64, 32); // Desenha uma string
+    ssd1306_send_data(&ssd);              // Atualiza o display
 
     return;
 }
@@ -346,11 +362,17 @@ void gpio_irq_handler(uint gpio, uint32_t events)
         {
             gpio_put(led_pin_g, !gpio_get(led_pin_g));
             printf("LED verde alternado!\n");
+            ssd1306_fill(&ssd, false);                                 // Limpa o display
+            ssd1306_draw_string(&ssd, "LED verde mudou", 2, 32); // Desenha uma string
+            ssd1306_send_data(&ssd);                                   // Atualiza o display
         }
         else if (gpio == button_b)
         {
             gpio_put(led_pin_b, !gpio_get(led_pin_b));
             printf("LED azul alternado!\n");
+            ssd1306_fill(&ssd, false);                                // Limpa o display
+            ssd1306_draw_string(&ssd, "LED azul mudou", 2, 32); // Desenha uma string
+            ssd1306_send_data(&ssd);
         }
     }
 }
