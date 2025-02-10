@@ -1,4 +1,4 @@
-# Tarefa sobre interfaces de comunicações.
+# Tarefa sobre interfaces de comunicação serial.
 Este projeto tem como objetivo explorar e consolidar os conceitos de comunicação serial utilizando o microcontrolador RP2040 na placa de desenvolvimento BitDogLab.
 
 ## Funcionalidades
